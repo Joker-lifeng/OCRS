@@ -1,0 +1,25 @@
+.fr {
+	float: right;
+}
+
+.fl {
+	float: left;
+}
+/*解决1像素图片BUG*/
+img {
+	vertical-align: top;
+}
+/*伪类清除浮动，给.clearfix类名的元素的after伪类*/
+.clearfix:after {
+	content: ".";
+	height: 0;
+	line-height: 0;
+	display: block;
+	clear: both;
+	overflow: hidden;
+}
+
+.clearfix {
+	*zoom: 1;
+}
+

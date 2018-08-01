@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html class='no-js' lang='en'>
+
+<head>
+    <meta charset='utf-8'>
+    <meta content='IE=edge,chrome=1' http-equiv='X-UA-Compatible'>
+    <title>湘北高中选修课报名</title>
+    <meta content='lab2023' name='author'>
+    <meta content='' name='description'>
+    <meta content='' name='keywords'>
+    <!--<link href="/css/application-a07755f5.css" rel="stylesheet" type="text/css" />-->
+    <!--<link href="/css/iconfont.css" rel="stylesheet" type="text/css" />-->
+    <!-- <link href="assets/images/favicon.ico" rel="icon" type="image/ico" /> -->
+    <link rel="stylesheet" href="/css/bootstrap.css">
+    <style>
+        #table_course input {
+            width: 180px;
+        }
+        
+        #table_course input[disabled] {
+            pointer-events: auto;
+        }
+        
+        #table_course tr a {
+            color: #ff1a5e;
+            margin-top: 15px;
+        }
+        
+        #table_course tr p {
+            padding-top: 10px;
+            box-sizing: border-box;
+        }
+        body {
+            background: url("/images/bg5.jpg") center top no-repeat;
+            background-color: #4224ff;
+            background-size: cover;
+            padding: 0;
+            
+        }
+        #table_course tr td {
+            color: black;
+        }
+    </style>
+</head>
+<body class="main page">
+<!--头部导航-->
+<nav class="navbar navbar-inverse">
+    <div class="container-fluid">
+        
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
+                    data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#">湘北高中选修课报名</a>
+            
+        </div>
+        
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+            <ul class="nav navbar-nav">
+                <li class="active"><a href="/">选课报名</a></li>
+                <!--<li><a href='/stuCourse'>我的选课</a></li>-->
+                <li><a href="/changePassword">密码修改</a></li>
+            </ul>
+            
+            <ul class="nav navbar-nav navbar-right">
+                <li class="active"><a href="#">用户: <%= username %></a></li>
+                <li class=""><a href="/logout">退出登录</a></li>
+            </ul>
+        </div><!-- /.navbar-collapse -->
+    </div><!-- /.container-fluid -->
+</nav>
+<!--container 选课表格容器-->
+<div class="container">
+    <div class="row">
+        <table class="table" id="table_course">
+            <thead>
+            <tr>
+                <th style="width: 80px;">课程编号</th>
+                <th style="width: 80px;">课程名称</th>
+                <th style="width: 80px;">课程星期</th>
+                <th style="width: 80px;">可报年级</th>
+                <th style="width: 80px;">可报人数</th>
+                <th style="width: 80px;">老师</th>
+                <th style="width: 80px;">简介</th>
+                <th style="width: 50px;">报名此课程</th>
+            </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+
+
+<!--课程表格模板-->
+<script type="text/html" id="course_tpl">
+    {{each rows as value index}}
+    <tr>
+        <td class="cid">{{value.cid}}</td>
+        <td>{{value.name}}</td>
+        <td>{{value.dayofweek}}</td>
+        <td>{{value.allow}}</td>
+        <td>{{value.number}}</td>
+        <td>{{value.teacher}}</td>
+        <td>{{value.briefintro}}</td>
+        <!--渲染按钮的模板需要对ajax请求的后台check接口的反馈数据的数组进行判断-->
+        <td><input type="button" class="btn
+        {{if checkdata[index].err ==0 }}btn-success
+        {{/if}}"
+                   value="
+                   {{if checkdata[index].err != 0 }}{{checkdata[index].msg}}
+                   {{else if  checkdata[index].err != 1 }}报名
+                    {{/if}}"
+                   {{if checkdata[index].err !=0 }} disabled {{/if}}>
+            <!--如果是错误码2 那么后台给咱们的反馈就是这个课程已经报名了 这个渲染一个退报的a标签-->
+            {{if checkdata[index].err == 2}} <p><a href="javascript:void(0)" class="BackOfCouse">点击退报名</a></p> {{/if}}
+        </td>
+    </tr>
+    {{/each}}
+</script>
+
+<script src="/js/lib/jquery-1.10.2.js"></script>
+<script src="/js/lib/bootstrap.min.js"></script>
+<script src="/js/lib/template-web.js"></script>
+<script>
+  var table_course = document.getElementById('table_course')
+  var $table_course = $('#table_course')
+  var $BackOfCouseBtn = $("#table_course .BackOfCouse")
+  //  发送ajax获取课程
+  $.ajax({
+    type: 'GET',
+    url: '/course',
+    dataType: 'json',
+  }).done(function (data) {
+    // console.log(data)
+    //  再次发送ajax请求得到 check接口的返回数据决定 能报名哪些课程
+    $.ajax({
+      url: '/check',
+      type: 'GET',
+      dataType: 'json',
+    }).done(function (checkdata) {
+      // console.log(checkdata.result)
+      //    定义一个模板字典
+      var newData = {
+        rows: data.rows.reverse(), //   课程的列表数据
+        checkdata: checkdata.result,  //    决定不能报名哪些课和能报名哪些课
+      }
+      //    生成模板
+      var html = template('course_tpl', newData)
+      // 上DOM树
+      table_course.innerHTML += html
+    }).fail(function () {
+      alert('请求失败1错误代码')
+    })
+  }).fail(function () {
+    alert('请求数据失败')
+  })
+  
+  //   代理事件： 报名按钮绑定click事件
+  $table_course.on('click', 'input[type=button]', function () {
+    //    获得cid课程编号
+    var cid = $(this).parents('td').siblings('.cid').html()
+    //    发送ajax 提交要报名的课程的cid
+    $.ajax({
+      type: 'POST',
+      url: '/applyCourse',
+      data: {cid: cid},
+      dataType: 'json'
+    }).done(function (data) {
+      if (data.err) {
+        alert(data.msg)
+      } else {
+        //  如果服务器端的响应错误信息为0  那么刷新本页面
+        window.location.reload()
+      }
+    }).fail(function () {
+      alert('请求失败 请重试')
+    })
+    
+  })
+
+    // 代理事件： 退报按钮的事件
+  $table_course.on('click','.BackOfCouse',function () {
+    var cid = $(this).parents('td').siblings('.cid').html()
+    //  发送ajax 提交退报的cid课程编号
+    $.ajax({
+      type: 'POST',
+      url: '/BackOfCouse',
+      data: {cid: cid},
+      dataType: 'json'
+    }).done(function (data) {
+      if (data.err) {
+        alert(data.msg)
+      } else {
+        //  如果服务器端的响应错误信息为0  那么刷新本页面
+        window.location.reload()
+      }
+    }).fail(function () {
+      alert('请求失败 请重试')
+    })
+  })
+
+</script>
+
+
+</body>
+</html>
